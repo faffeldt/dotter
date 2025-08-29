@@ -330,6 +330,16 @@ fn add_dotter_variable(
         "os".into(),
         (if cfg!(windows) { "windows" } else { "unix" }).into(),
     );
+
+    // New better way
+    dotter.insert("unix".into(), Value::Boolean(cfg!(unix)));
+    dotter.insert(
+        "windows".into(),
+        Value::Boolean(cfg!(target_os = "windows")),
+    );
+    dotter.insert("linux".into(), Value::Boolean(cfg!(target_os = "linux")));
+    dotter.insert("macos".into(), Value::Boolean(cfg!(target_os = "macos")));
+
     dotter.insert(
         "current_dir".into(),
         Value::String(

@@ -56,6 +56,9 @@ pub(crate) async fn watch(opt: Options) -> Result<()> {
             return action;
         }
 
+        debug!("Changes detected in watched files.");
+        trace!("Changed files: {:#?}", action.paths().collect::<Vec<_>>());
+
         println!("[Dotter] Deploying...");
         if let Err(e) = deploy::deploy(&opt) {
             display_error(e);
