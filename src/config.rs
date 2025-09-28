@@ -43,6 +43,7 @@ pub struct TemplateTarget {
     pub prepend: Option<String>,
     #[serde(rename = "if")]
     pub condition: Option<String>,
+    pub recurse: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -499,6 +500,7 @@ impl<T: Into<PathBuf>> From<T> for TemplateTarget {
             append: None,
             prepend: None,
             condition: None,
+            recurse: None,
         }
     }
 }
@@ -511,6 +513,7 @@ impl SymbolicTarget {
             condition: self.condition,
             prepend: None,
             append: None,
+            recurse: self.recurse,
         }
     }
 }
@@ -552,6 +555,14 @@ fn expand_directory(source: &Path, target: &FileTarget, config: &Configuration) 
             target: _,
             owner: _,
             condition: _,
+            recurse: Some(rec),
+        }) => *rec,
+        FileTarget::ComplexTemplate(TemplateTarget {
+            target: _,
+            owner: _,
+            condition: _,
+            append: _,
+            prepend: _,
             recurse: Some(rec),
         }) => *rec,
         _ => config.recurse,
@@ -826,5 +837,37 @@ mod test {
             sliver,
             &FileTarget::Symbolic(PathBuf::from("~/.SliverBodacious").into())
         );
+    }
+
+    #[test]
+    fn setting_template_and_recurse_for_directory() {
+        let global: GlobalConfig = toml::from_str(
+            r#"
+                [derby]
+                depends = []
+
+                [derby.files]
+                derby = { target = '~/.DerbyLantern', type = 'template', recurse = true }
+            "#,
+        )
+        .unwrap();
+
+        let local: LocalConfig = toml::from_str(
+            r#"
+               packages = ['derby']
+           "#,
+        )
+        .unwrap();
+
+        let merged_config = merge_configuration_files(global, local, None);
+
+        let config = merged_config.unwrap();
+
+        let derby = config.files.get(&PathBuf::from("derby")).unwrap();
+
+        let mut expected: TemplateTarget = PathBuf::from("~/.DerbyLantern").into();
+        expected.recurse = Some(true);
+
+        assert_eq!(derby, &FileTarget::ComplexTemplate(expected));
     }
 }
